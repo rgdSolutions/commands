@@ -12,3 +12,13 @@ eng-scorecard.md
 .cursorrules.yaml
 .cursorrules.json
 .cursorrules.jsonc
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
