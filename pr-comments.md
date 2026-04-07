@@ -7,6 +7,18 @@ allowed-tools: Bash(gh:*), Bash(git:*), Read, Edit, Glob, Grep, AskUserQuestion
 
 Cycle through unresolved inline code review comments on a GitHub PR. For each comment, present the code context and review thread, then let the user choose an action: fix, ignore, or skip.
 
+## Bypass Permissions Mode (Autonomous Execution)
+
+When running with bypass permissions enabled (i.e., the user has granted full tool auto-approval and Claude can execute without being prompted), this command MUST run fully autonomously without any user interaction:
+
+- **Do NOT use `AskUserQuestion` at any point.** Skip every prompt that would normally ask the user to choose an action.
+- **Auto-select the recommended action:** After evaluating each comment in Step 3b, automatically execute whichever action you recommended (Fix, Ignore, or Skip) without asking.
+- **Auto-select "Post and resolve"** for all reply prompts — use your drafted reply as-is without asking the user to confirm or edit it.
+- **Auto-select "Continue"** when re-queued/skipped comments remain in Step 4 — keep cycling through all remaining comments until every comment has been fixed or ignored.
+- **The goal is zero user prompts.** The user should be able to run `/pr-comments <url>` and walk away while every comment is addressed.
+
+To detect bypass mode: if your first `AskUserQuestion` call would be auto-approved (i.e., the tool is in the allowed-tools list and permissions are set to bypass/auto-approve), treat the entire session as autonomous. In practice, since `AskUserQuestion` is listed in `allowed-tools` above, assume autonomous mode whenever you are not being prompted for tool approvals.
+
 **You MUST run all commands fresh right now.** Do NOT reuse any previously observed or cached data from earlier in this conversation.
 
 ## Step 0: Parse arguments
