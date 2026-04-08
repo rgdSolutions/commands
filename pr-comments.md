@@ -7,37 +7,39 @@ allowed-tools: Bash(gh:*), Bash(git:*), Read, Edit, Glob, Grep, AskUserQuestion
 
 Cycle through unresolved inline code review comments on a GitHub PR. For each comment, present the code context and review thread, then let the user choose an action: fix, ignore, or skip.
 
-## Bypass Permissions Mode (Autonomous Execution)
+## Autonomous Mode (`--auto`)
 
-When running with bypass permissions enabled (i.e., the user has granted full tool auto-approval and Claude can execute without being prompted), this command MUST run fully autonomously without any user interaction:
+When the `--auto` flag is passed as an argument (e.g., `/pr-comments <url> --auto`), this command MUST run fully autonomously without any user interaction:
 
 - **Do NOT use `AskUserQuestion` at any point.** Skip every prompt that would normally ask the user to choose an action.
 - **Auto-select the recommended action:** After evaluating each comment in Step 3b, automatically execute whichever action you recommended (Fix, Ignore, or Skip) without asking.
 - **Auto-select "Post and resolve"** for all reply prompts — use your drafted reply as-is without asking the user to confirm or edit it.
 - **Auto-select "Continue"** when re-queued/skipped comments remain in Step 4 — keep cycling through all remaining comments until every comment has been fixed or ignored.
-- **The goal is zero user prompts.** The user should be able to run `/pr-comments <url>` and walk away while every comment is addressed.
+- **The goal is zero user prompts.** The user should be able to run `/pr-comments <url> --auto` and walk away while every comment is addressed.
 
-To detect bypass mode: if your first `AskUserQuestion` call would be auto-approved (i.e., the tool is in the allowed-tools list and permissions are set to bypass/auto-approve), treat the entire session as autonomous. In practice, since `AskUserQuestion` is listed in `allowed-tools` above, assume autonomous mode whenever you are not being prompted for tool approvals.
+**Important:** Autonomous mode is triggered **only** by the `--auto` flag, NOT by the session's permission mode. Even if the Claude session was started with `--dangerously-skip-permissions`, this command runs interactively unless `--auto` is explicitly passed.
 
 **You MUST run all commands fresh right now.** Do NOT reuse any previously observed or cached data from earlier in this conversation.
 
 ## Step 0: Parse arguments
 
-The command takes exactly one mandatory argument: a GitHub PR URL.
+The command takes one mandatory argument (a GitHub PR URL) and one optional flag (`--auto`).
 
-1. Extract the PR URL from the arguments. It should match the pattern:
+1. **Parse flags:** Check if `--auto` is present among the arguments. If so, enable autonomous mode (see "Autonomous Mode" above) and remove the flag from the argument list before proceeding.
+
+2. Extract the PR URL from the remaining arguments. It should match the pattern:
    ```
    https://github.com/{owner}/{repo}/pull/{pr_number}
    ```
    Strip any trailing slashes, query parameters (`?...`), or fragment identifiers (`#...`) before parsing.
 
-2. Extract `owner`, `repo`, and `pr_number` from the URL.
+3. Extract `owner`, `repo`, and `pr_number` from the URL.
 
-3. **Validation:**
-   - If no argument is provided, print: "Usage: /pr-comments <github-pr-url>" and stop.
+4. **Validation:**
+   - If no argument is provided, print: "Usage: /pr-comments <github-pr-url> [--auto]" and stop.
    - If the URL doesn't match the expected pattern, print: "Invalid PR URL. Expected format: https://github.com/{owner}/{repo}/pull/{number}" and stop.
 
-4. **Check prerequisites:**
+5. **Check prerequisites:**
    - Run `gh --version` to verify the GitHub CLI is installed. If it fails, print: "This command requires the GitHub CLI (gh). Install it from https://cli.github.com/" and stop.
    - Run `gh auth status` to verify authentication. If it fails, print: "GitHub CLI not authenticated. Run `gh auth login` first." and stop.
 
