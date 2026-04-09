@@ -5,14 +5,14 @@ allowed-tools: Bash(gh:*), Bash(git:*), Read, Edit, Glob, Grep, AskUserQuestion
 
 # PR Review Comments
 
-Cycle through unresolved inline code review comments on a GitHub PR. For each comment, present the code context and review thread, then let the user choose an action: fix, ignore, or skip.
+Cycle through unresolved inline code review comments on a GitHub PR. For each comment, present the code context and review thread, then let the user choose an action: fix, ignore, reply, or skip.
 
 ## Autonomous Mode (`--auto`)
 
 When the `--auto` flag is passed as an argument (e.g., `/pr-comments <url> --auto`), this command MUST run fully autonomously without any user interaction:
 
 - **Do NOT use `AskUserQuestion` at any point.** Skip every prompt that would normally ask the user to choose an action.
-- **Auto-select the recommended action:** After evaluating each comment in Step 3b, automatically execute whichever action you recommended (Fix, Ignore, or Skip) without asking.
+- **Auto-select the recommended action:** After evaluating each comment in Step 3b, automatically execute whichever action you recommended (Fix, Ignore, or Skip) without asking. Never auto-select Reply — it requires human interaction to be useful.
 - **Auto-select "Post and resolve"** for all reply prompts — use your drafted reply as-is without asking the user to confirm or edit it.
 - **Auto-select "Continue"** when re-queued/skipped comments remain in Step 4 — keep cycling through all remaining comments until every comment has been fixed or ignored.
 - **The goal is zero user prompts.** The user should be able to run `/pr-comments <url> --auto` and walk away while every comment is addressed.
@@ -132,7 +132,7 @@ For each thread in the queue, do the following:
 Before presenting actions, analyze the review comment in the context of the surrounding code and provide a brief assessment:
 
 1. **Validity:** Is the comment valid? Does it point out a real issue, or is it based on a misunderstanding of the code?
-2. **Recommendation:** Based on your analysis, recommend one of the available actions (Fix, Ignore, or Skip) and explain why in 1-2 sentences.
+2. **Recommendation:** Based on your analysis, recommend one of the available actions (Fix, Ignore, Reply, or Skip) and explain why in 1-2 sentences. Note: in `--auto` mode, do not recommend Reply — only recommend Fix, Ignore, or Skip.
 
 Print this assessment formatted as:
 ```
@@ -147,10 +147,12 @@ Use `AskUserQuestion` to present the available actions. If the file does not exi
 **Options (when file exists locally):**
 - **Fix** — "Apply a code fix to address this comment, optionally reply, then resolve the thread on GitHub"
 - **Ignore** — "Resolve without fixing — optionally reply, then mark as resolved"
+- **Reply** — "Post a reply without resolving — the thread stays open for further discussion"
 - **Skip** — "Come back to this comment later"
 
 **Options (when file does NOT exist locally):**
 - **Ignore** — (same as above)
+- **Reply** — (same as above)
 - **Skip** — (same as above)
 
 ### 3d: Execute action
@@ -201,6 +203,21 @@ Use `AskUserQuestion` to present the available actions. If the file does not exi
 3. Print: "Ignored and resolved."
 4. Record this action as "ignored" for the summary.
 
+**Reply:**
+1. Draft a reply based on the review comment context (e.g., a clarifying question, a counterpoint, or a request for more detail). Present it to the user via `AskUserQuestion` with options:
+   - **Post reply** — "Post this reply and keep the thread open"
+   - **Edit** — "Let me modify the reply first"
+   If the user chooses "Edit", ask them to provide the modified text, then re-confirm.
+2. Post the reply:
+   ```bash
+   gh api repos/{owner}/{repo}/pulls/comments/{comment_database_id}/replies -f body="{reply}"
+   ```
+   Where `{comment_database_id}` is the `databaseId` of the **last** comment in the thread.
+3. Do **not** resolve the thread — it stays open for further discussion.
+4. Move this thread to the **end** of the queue so it will be revisited after all remaining threads.
+5. Print: "Reply posted — thread remains unresolved."
+6. Record this action as "replied" for the summary. (If the thread is later acted upon with Fix or Ignore, update the record accordingly.)
+
 **Skip:**
 1. Move this thread to the **end** of the queue so it will be revisited after all remaining threads.
 2. Print: "Skipped — will revisit later."
@@ -208,13 +225,13 @@ Use `AskUserQuestion` to present the available actions. If the file does not exi
 
 ## Step 4: Handle re-queued comments
 
-After completing a pass through the queue, check if any skipped comments remain.
+After completing a pass through the queue, check if any skipped or replied comments remain (i.e., threads that were re-queued).
 
-1. If there are skipped comments, ask the user via `AskUserQuestion`:
-   - **Continue** — "Revisit the N remaining skipped comment(s)"
+1. If there are re-queued comments, ask the user via `AskUserQuestion`:
+   - **Continue** — "Revisit the N remaining skipped/replied comment(s)"
    - **Stop** — "Finish and show the summary"
 
-2. If the user chooses **Continue**, cycle through the skipped comments using the same process as Step 3. Skipped comments can be skipped again (they go back to the end of the remaining queue).
+2. If the user chooses **Continue**, cycle through the re-queued comments using the same process as Step 3. Comments can be skipped or replied again (they go back to the end of the remaining queue).
 
 3. If the user chooses **Stop**, proceed to the summary.
 
@@ -232,6 +249,7 @@ URL: {pr_url}
 |-------------|-------|
 | Fixed       | X     |
 | Ignored     | X     |
+| Replied     | X     |
 | Skipped     | X     |
 | **Total**   | **Y** |
 ```
