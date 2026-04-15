@@ -25,3 +25,4 @@ git clone https://github.com/rgdSolutions/commands.git
 | `/kebab-case` | Enforces kebab-case file naming across your diff, renaming files and updating all imports and references automatically. |
 | `/astro-tokens` | Audits the diff for hardcoded colors and spacing that should use design system tokens (astro-code specific). |
 | `/mx2-tokens` | Audits the diff for hardcoded colors, spacing, and borderRadius that should use MX2 design tokens (docr specific). Supports `--auto` for fire-and-forget mode. |
+| `/qa-testing-steps` | Generates concise, browser-testable QA steps from your branch diff for copy-paste into tickets. Infers routes, includes preconditions and key edge cases. |
