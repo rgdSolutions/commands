@@ -24,3 +24,4 @@ git clone https://github.com/rgdSolutions/commands.git
 | `/remove-dead-code` | Finds and removes unused imports, functions, variables, and unreachable code introduced on your branch. |
 | `/kebab-case` | Enforces kebab-case file naming across your diff, renaming files and updating all imports and references automatically. |
 | `/astro-tokens` | Audits the diff for hardcoded colors and spacing that should use design system tokens (astro-code specific). |
+| `/mx2-tokens` | Audits the diff for hardcoded colors, spacing, and borderRadius that should use MX2 design tokens (docr specific). Supports `--auto` for fire-and-forget mode. |
