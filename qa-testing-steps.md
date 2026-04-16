@@ -79,12 +79,16 @@ Only include this section when the diff clearly implies it. Do not add generic p
 ### Writing steps
 
 - Each step is **one sentence**, action-oriented. Start with a verb: "Click...", "Navigate to...", "Enter...", "Select...", "Scroll to..."
-- Use plain language a non-technical person can follow. Never reference code internals — no component names, function names, variable names, or CSS classes.
+- Use plain language a non-technical person can follow. Never reference code internals — no component names, function names, variable names, CSS classes, or framework-specific terms.
+- **No developer jargon in viewport/device steps.** Write "resize the browser to approximate a phone" instead of referencing CSS breakpoint names or pixel values. QA testers don't know framework breakpoint constants.
+- **Include setup steps that create testable state.** If a feature requires data to exist before it can be tested (e.g., items must be added before a list can be verified), include explicit steps to create that data. Do NOT assume the tester already has the right state — walk them through it. Also include "wait for loading" steps when async operations must complete before the next action.
 - Include inferred routes/URLs when available (e.g., "Navigate to `/settings/profile`")
 - Include **expected results** only for key assertions — moments where a specific visual or behavioral change should be verified. Format: `→ Expected: [what should happen]`
 - Do NOT add expected results to every step. Only add them where there is something specific and important to verify.
+- **Keep expected results to what a tester can verify in one glance.** If verifying a side-effect requires navigating to another part of the UI, it belongs in a separate step or not at all. Prefer short, direct assertions over compound ones.
+- **Do NOT duplicate coverage across sections.** If a behavior is already verified in one section, do not re-verify it as a side-effect assertion in a different section.
 - Include **1-2 edge cases** per feature area when they are obvious from the diff (e.g., empty form submissions, invalid input, boundary values). Label them clearly: "Edge case: ..."
-- Do NOT invent edge cases that are not suggested by the diff. Only include edge cases where the diff shows handling (or lack of handling) for those scenarios.
+- Do NOT invent edge cases that are not suggested by the diff. Only include edge cases where the diff shows handling (or lack of handling) for those scenarios. **Cut speculative edge cases** — if a scenario isn't a natural QA flow, don't include it even if the code technically handles it.
 
 ### Length targets
 
